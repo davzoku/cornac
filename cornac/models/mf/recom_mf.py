@@ -174,8 +174,9 @@ class MF(Recommender, ANNMixin):
         if self.trainable:
             if self.backend == "cpu":
                 self._fit_cpu(train_set, val_set)
-            elif self.backend == "pytorch":
-                self._fit_pt(train_set, val_set)
+            elif self.backend in {"pytorch", "cuda", "mps"}:
+                backend = self.backend if self.backend in {"cuda", "mps"} else None
+                self._fit_pt(train_set, val_set, backend)
             else:
                 raise ValueError(f"{self.backend} is not supported")
         return self
@@ -210,11 +211,20 @@ class MF(Recommender, ANNMixin):
     #####################
     ## PyTorch backend ##
     #####################
-    def _fit_pt(self, train_set, val_set):
+    def _fit_pt(self, train_set, val_set, backend):
         import torch
         from .backend_pt import MF, learn
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        available_backends = ["cuda", "mps", "cpu"]
+        device = (
+            torch.device(backend)
+            if backend in available_backends
+            else torch.device(
+                "cuda"
+                if torch.cuda.is_available()
+                else "mps" if torch.backends.mps.is_available() else "cpu"
+            )
+        )
         self.device = device
 
         if self.seed is not None:
