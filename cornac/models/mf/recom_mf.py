@@ -174,8 +174,9 @@ class MF(Recommender, ANNMixin):
         if self.trainable:
             if self.backend == "cpu":
                 self._fit_cpu(train_set, val_set)
-            elif self.backend in {"pytorch", "cuda", "mps"}:
-                backend = self.backend if self.backend in {"cuda", "mps"} else None
+            # "pytorch-cpu" test keyword to force cpu for testing
+            elif self.backend in {"pytorch", "cuda", "mps","pytorch-cpu"}:
+                backend = self.backend if self.backend in {"cuda", "mps", "pytorch-cpu"} else None
                 self._fit_pt(train_set, val_set, backend)
             else:
                 raise ValueError(f"{self.backend} is not supported")
@@ -214,17 +215,20 @@ class MF(Recommender, ANNMixin):
     def _fit_pt(self, train_set, val_set, backend):
         import torch
         from .backend_pt import MF, learn
-
-        available_backends = ["cuda", "mps", "cpu"]
-        device = (
-            torch.device(backend)
-            if backend in available_backends
-            else torch.device(
-                "cuda"
-                if torch.cuda.is_available()
-                else "mps" if torch.backends.mps.is_available() else "cpu"
+        # "pytorch-cpu": force cpu for testing
+        if backend == "pytorch-cpu":
+            device="cpu"
+        else:
+            available_backends = ["cuda", "mps", "cpu"]
+            device = (
+                torch.device(backend)
+                if backend in available_backends
+                else torch.device(
+                    "cuda"
+                    if torch.cuda.is_available()
+                    else "mps" if torch.backends.mps.is_available() else "cpu"
+                )
             )
-        )
         self.device = device
 
         if self.seed is not None:

@@ -76,6 +76,7 @@ def learn(
     device=torch.device("cpu"),
 ):
     model = model.to(device)
+    print(f"DEBUG: {device=}")
     criteria = nn.MSELoss(reduction="sum")
     optimizer = OPTIMIZER_DICT[optimizer](
         params=model.parameters(), lr=learning_rate, weight_decay=reg
